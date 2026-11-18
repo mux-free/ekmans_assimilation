@@ -1,5 +1,8 @@
+import numpy as np
 import jax.numpy as jnp
+from typing import Union, Optional, Sequence, Callable, Any
 
+from .observation_operator import ObservationOperator
 
 def distance_based_localization(
     r_influ: int,
@@ -113,18 +116,20 @@ def make_localization_fn(
     )
 
 
-class EnsembleKalmanFilter():
+class EnsembleKalmanFilter:
     """Ensemble Kalman Filter."""
 
     def __init__(
         self,
         ensemble_size: int,
         R: np.ndarray,
-        obs_operator: ObservationOperator,
+        num_states: int = 2,
+        state_dim: int = 101, 
         name: str = "enkf",
         inflation_factor: float = 1.0,
         localization_distance: Optional[int] = None,
         periodic: bool = False,
+        random_seed: int = 14
     ) -> None:
         """
         Initialize the Ensemble Kalman Filter.
@@ -137,10 +142,12 @@ class EnsembleKalmanFilter():
         """
 
         self.name = name
-        self.obs_operator = obs_operator
         self.ensemble_size = ensemble_size
         self.inflation_factor = inflation_factor
+        self.random_seed = random_seed
 
+        self.num_states = num_states
+        self.state_dim = state_dim
         self.dofs = self.num_states * self.state_dim
         self.R = R
         self.localization_distance = localization_distance
@@ -153,76 +160,44 @@ class EnsembleKalmanFilter():
             self.periodic,
         )
 
-    def _analysis_step(
-        self,
-        prior_ensemble: np.ndarray,
-        obs_vect: np.ndarray,
-        rng_key: jax.random.PRNGKey,
-        **kwargs: Any,
-    ) -> np.ndarray:
-        """Analysis step of the Ensemble Kalman Filter.
 
-        Args:
-        mem (int): Number of ensemble members.
-        nx (int): The size of the state vector.
-        ensemble (numpy.array): Ensemble of state estimates.
-        obs_vect (numpy.array): Observation vector.
-        R (numpy.array): Observation error covariance matrix.
-        rng_key (jax.random.PRNGKey): RNG key.
-
-        Returns:
-        dict: A dictionary containing the posterior ensemble, Kalman gain, innovation,
-            mean and covariance of the posterior.
+    def analysis_step(
+        self, 
+        X: np.ndarray, 
+        Y: np.ndarray, 
+        y: np.ndarray, 
+        ):
         """
+        X: (N, D) prior ensemble of estimated variables
+        Y: (N, M) predicted observations
+        y: (M,) observed values
 
-        # Prepare the prior state vector (ensemble matrix) -> shape [dofs, N]
-        prior_ensemble = prior_ensemble.reshape(self.ensemble_size, -1).T
+        with D: EnsSize, N: StateDim, M: NrObs
+        """
+        
+        rng = np.random.default_rng(self.random_seed)
 
-        # Standard multiplicative prior inflation: inflate the forecast ensemble
-        # ANOMALIES about their mean by inflation_factor (lambda). This scales the
-        # standard deviation by lambda (covariance by lambda^2) AND, because the
-        # analysis update below starts from these inflated members, it actually
-        # increases the posterior spread -- unlike scaling only cov_prior, which
-        # would inflate the gain and shrink the posterior spread (the opposite of
-        # the intended effect).
-        mean = jnp.mean(prior_ensemble, axis=1, keepdims=True)
-        prior_ensemble = mean + self.inflation_factor * (prior_ensemble - mean)
+        X = X.reshape(self.ensemble_size, -1).T  # State-Matrix has state in rows and ensemble in columns(dofs, N)
+        Y = Y.reshape(self.ensemble_size, -1).T  # ... also here: Ensemble members are columns
 
-        # Calculate the covariance of the (inflated) prior
-        cov_prior = jnp.cov(prior_ensemble)
-        cov_prior = self.localization(cov_prior)
+        # Ensemble anomalies
+        Xp = X - X.mean(axis=1, keepdims=True)
+        Yp = Y - Y.mean(axis=1, keepdims=True) 
 
-        # Filter and perturb the observation vector
-        rng_key, key = jax.random.split(rng_key)
-        perturb = jax.random.multivariate_normal(
-            key, jnp.zeros(self.obs_operator.num_obs), self.R, shape=(self.ensemble_size,)  # type: ignore[attr-defined]
-        )
-        # Center the perturbations exactly across the ensemble axis. The raw draws
-        # carry an O(1/sqrt(N)) sample mean that would otherwise add a spurious
-        # shift to the analysis mean; subtracting the ensemble mean removes it.
-        perturb = perturb - perturb.mean(axis=0, keepdims=True)
-        obs_vect_perturbed = obs_vect + perturb
-        obs_vect_perturbed = obs_vect_perturbed.T
+        # Covariances
+        Pxy = Xp @ Yp.T / (self.ensemble_size - 1)
+        Pyy = Yp @ Yp.T / (self.ensemble_size - 1)
 
-        # Observation operator matrix
-        obs_matrix = self.obs_operator.obs_matrix  # type: ignore[attr-defined]
+        # Kalman gain
+        self.kalman_gain = np.linalg.solve(Pyy + self.R, Pxy.T).T
 
-        # Calculate the Kalman gain
-        k_left = cov_prior @ obs_matrix.T
-        k_right = obs_matrix @ cov_prior @ obs_matrix.T + self.R
+        # Perturbed observations
+        noise = rng.multivariate_normal(np.zeros(len(y)), self.R, size=self.ensemble_size).T
+        noise -= noise.mean(axis=1, keepdims=True)
 
-        # K_left * K_right^-1
-        self.kalman_gain = jnp.linalg.solve(k_right, k_left.T).T
+        # Analysis
+        self.innovation = y[:, None] + noise - Y
+        Xa = X + self.kalman_gain @ self.innovation
 
-        # Calculate the innovation
-        self.innovation = obs_vect_perturbed - obs_matrix @ prior_ensemble
-
-        # Calculate the posterior ensemble
-        posterior_ensemble = prior_ensemble + self.kalman_gain @ self.innovation
-        posterior_ensemble = posterior_ensemble.T
-
-        posterior_ensemble = posterior_ensemble.reshape(
-            self.ensemble_size, self.num_states, self.state_dim
-        )
-
-        return posterior_ensemble
+        # Return again, where ens members are given by columns
+        return Xa.T

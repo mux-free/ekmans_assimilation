@@ -72,3 +72,28 @@ pip install -r requirements.txt
 python example.py
 pytest -q
 ```
+
+## Synthetic-observation EnKF twin experiment
+
+`python twin_enkf.py` runs a truth model (`ug=10 m/s`, `vg=0`, `K=2 m²/s`),
+creates one noisy **u** observation at `z=100 m` every hour for six cycles,
+then assimilates these into a 24-member parameter ensemble.
+The observation error has standard deviation 0.5 m/s, so `R=[[0.25]]`.
+The simulation continues one hour beyond the sixth assimilation.
+
+- `enkf.py`: a small self-contained adaptation of the supplied JAX stochastic
+  EnKF analysis step. It sets `num_states=1`, `state_dim=D` to match the
+  flattened Ekman state; no localization is used.
+- `twin_enkf.py`: experiment script showing the truth run, observation matrix,
+  repeated EnKF calls and applying posterior states via `set_state_vector()`.
+- Selected state variables are `(u, v, ug, K)`; fixed boundary levels are
+  excluded, and `vg=0` is held fixed. The observation operator sees only the
+  `u(z=100 m)` component.
+- `time=0` remains the end of spin-up. All ensemble members share the
+  unmodified 1D output-time coordinate.
+
+**Scientific limitation:** A fully spun-up, fixed-parameter truth is almost
+steady. Six noisy observations of only `u(100 m)` generally cannot uniquely
+identify both `ug` and `K`. This is a minimal end-to-end demonstration, not a
+parameter-recovery benchmark. Consider additionally observing `v` and several
+heights, or introducing a common transient forcing in a subsequent experiment.
