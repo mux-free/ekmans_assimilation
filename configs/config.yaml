@@ -17,7 +17,7 @@ data_assimilation:
     t0_assim: 14400     # 4 * 3600
     dt_assim: 7200      # 2 * 3600
     n_assim: 1
-    state_vars: ["ug","K","u","v"]
+    state_vars: ["ug", "K"] #["ug","K","u","v"]
 
 observations:
     z_obs: [100, 200, 300, 400]    # in meters

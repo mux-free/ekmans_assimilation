@@ -22,6 +22,11 @@ def plot_rmse(rmse_dict, ax=None, figsize=(8, 4)):
     ax.set(xlabel="Time [s]", ylabel="RMSE")
     ax.grid(alpha=0.25)
     ax.legend()
+    
+    ax.set_ylim(0,None)
+
+    rmse_da_tot = np.sqrt((rmse_dict['EnsMean']**2).mean())
+    ax.set_title(f"Total rmse (DA): {rmse_da_tot:.2f}")
 
     return ax
 

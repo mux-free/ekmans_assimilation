@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ekman-experiments"
+version = "0.2.0"
+description = "Interactive Ekman parameter and wind-state assimilation experiments"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "xarray>=2024.1", "PyYAML>=6", "matplotlib>=3.8"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+notebook = ["jupyterlab", "ipywidgets>=8"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

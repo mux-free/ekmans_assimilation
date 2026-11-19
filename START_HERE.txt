@@ -1,0 +1,6 @@
+Open ekman_interactive/README.md for setup and usage.
+The revised project is under ekman_interactive/.
+REVIEW.md and RESEARCH_PLAN.md contain the full assessment and research design.
+interactive_ekman.ipynb contains the optional interactive panel.
+original_snapshot/ preserves the extracted original text files for reference.
+The binary zip and empty-file placeholders in the original export were unavailable/omitted.

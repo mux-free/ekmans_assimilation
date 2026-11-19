@@ -62,6 +62,7 @@ class EnsembleCreator:
         self.ug_sim = self.params["ug_truth"] + self.params["ug_error"]
         self.K_sim  = self.params["K_truth"] + self.params["K_error"]
         self.sigma_ug = sim_config.ensemble["sigma_ug"]
+        self.rng = np.random.default_rng(random_seed)
         
         self.K_ens_distri = K_ens_distri
         if K_ens_distri == "uniform":
@@ -74,19 +75,16 @@ class EnsembleCreator:
 
         
     def param_ensemble_ug_gauss(self):
-        rng = np.random.default_rng(self.random_seed)
         # -- Normal distribution around a mean
-        self.ug_ens = rng.normal(self.ug_sim, self.sigma_ug, self.n_members)
+        self.ug_ens = self.rng.normal(self.ug_sim, self.sigma_ug, self.n_members)
         
     def param_ensemble_K_uniform(self):
-        rng = np.random.default_rng(self.random_seed)
         # -- Uniform distirbutioon with specified bounds
-        self.K_ens = rng.uniform(self.low_K, self.high_K, self.n_members)  
+        self.K_ens = self.rng.uniform(self.low_K, self.high_K, self.n_members)  
         
     def param_ensemble_K_lognorm(self, mu_K, sigma_lnK):
-        rng = np.random.default_rng(self.random_seed)
         # -- Log-Normal distribution 
-        self.K_ens = mu_K * np.exp(sigma_lnK * rng.standard_normal(self.n_members))
+        self.K_ens = mu_K * np.exp(sigma_lnK * self.rng.standard_normal(self.n_members))
 
     def plot_params_spread(self):
         ncols=1

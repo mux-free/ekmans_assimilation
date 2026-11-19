@@ -101,6 +101,7 @@ class ObservationOperator:
         state_dim: int,
         obs_std: float,
         num_states: int = 2,
+        random_seed: int = 14
     ):
             
         self.obs_states = obs_states
@@ -119,6 +120,7 @@ class ObservationOperator:
         self.obs_matrix = get_obs_matrix(
             obs_states, self.obs_indices_per_state, self.num_states, self.state_dim
         )
+        self.rng = np.random.default_rng(random_seed)
         # self.obs_matrix = sparse.BCOO.fromdense(self.obs_matrix)
 
     def grad_obs_operator(self, x: np.ndarray) -> np.ndarray:
@@ -130,8 +132,5 @@ class ObservationOperator:
         return self.obs_matrix @ x.flatten()
 
 
-    def synthetic_obs(self, obs_true, obs_std, random_seed=14):
-        rng = np.random.default_rng(random_seed)
-        pred_obs = obs_true + rng.normal(0, obs_std, len(obs_true))
-        return pred_obs
-
+    def synthetic_obs(self, obs_true, obs_std):
+        return obs_true + self.rng.normal(0, obs_std, size=np.shape(obs_true))

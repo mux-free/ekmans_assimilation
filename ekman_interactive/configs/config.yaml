@@ -1,0 +1,26 @@
+total_run_time: 86400  # 24 * 3600
+
+parameters:
+    ug_truth: 10
+    K_truth: 1
+    # Signed bias: prior center = truth + error (independent of spread).
+    ug_error: 2
+    K_error: 1.5
+
+ensemble: 
+    ensemble_size: 20
+    sigma_ug: 1.5       # Gaussian SD around ug_truth + ug_error
+    spread_K: 1.5      # Uniform half-width around K_truth + K_error
+
+
+data_assimilation:
+    t0_assim: 14400     # 4 * 3600
+    dt_assim: 7200      # 2 * 3600
+    n_assim: 1
+    state_vars: ["ug"] # Updated variables ONLY; both ug and K remain uncertain.
+
+observations:
+    z_obs: [100, 200, 300, 400]    # in meters
+    # z_obs: [50, 100, 150, 200, 250, 300, 350, 400, 450]    # in meters
+    obs_error: 0.25             # Observation Error Standard-Deviation
+    obs_vars: ["u","v"]

@@ -152,6 +152,8 @@ class EnsembleKalmanFilter:
         self.R = R
         self.localization_distance = localization_distance
         self.periodic = periodic
+        
+        self.rng = np.random.default_rng(random_seed)
 
         self.localization = make_localization_fn(
             self.localization_distance,
@@ -175,7 +177,6 @@ class EnsembleKalmanFilter:
         with D: EnsSize, N: StateDim, M: NrObs
         """
         
-        rng = np.random.default_rng(self.random_seed)
 
         X = X.reshape(self.ensemble_size, -1).T  # State-Matrix has state in rows and ensemble in columns(dofs, N)
         Y = Y.reshape(self.ensemble_size, -1).T  # ... also here: Ensemble members are columns
@@ -192,7 +193,7 @@ class EnsembleKalmanFilter:
         self.kalman_gain = np.linalg.solve(Pyy + self.R, Pxy.T).T
 
         # Perturbed observations
-        noise = rng.multivariate_normal(np.zeros(len(y)), self.R, size=self.ensemble_size).T
+        noise = self.rng.multivariate_normal(np.zeros(len(y)), self.R, size=self.ensemble_size).T
         noise -= noise.mean(axis=1, keepdims=True)
 
         # Analysis

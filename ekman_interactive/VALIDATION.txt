@@ -1,0 +1,28 @@
+.......................                                                  [100%]
+=============================== warnings summary ===============================
+../../../../../opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14: PytestRemovedIn10Warning: _pytest.python.CallSpec2 has been renamed to CallSpec.
+  The CallSpec2 alias will be removed in pytest 10.
+  Update imports to use CallSpec instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#callspec2-renamed
+    from _pytest.python import CallSpec2
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+23 passed, 1 warning in 4.61s
+
+Validation environment: Python 3.12.14
+numpy 2.3.5
+scipy 1.17.0
+xarray 2026.9.0
+PyYAML 6.0.3
+matplotlib 3.10.8
+pytest 9.2.0
+ipywidgets 8.1.9
+
+Editable installation and compileall: passed.
+Full supplied 72-hour spin-up and six-cycle ug-only example: passed.
+Final time 16200 s; every member K unchanged.
+Mean ug: 12.2976 initially; 9.4370 finally.
+Final interior vector RMSE: DA 1.9667 m/s; no DA 1.6480 m/s.
+Notebook schema valid; 5 code cells executed sequentially in-process without errors.
+Jupyter kernel/visual frontend not end-to-end verified: TCP and IPC socket binding blocked by execution environment.
